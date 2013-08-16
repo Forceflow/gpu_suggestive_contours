@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="GPUcontours" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin\Debug\GPUcontours" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj\Debug\" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+					<Add option="-fopenmp" />
+					<Add directory="C:\libs\trimesh2_mingw\gluit" />
+					<Add directory="C:\libs\trimesh2_mingw\include" />
+					<Add directory="C:\libs\glew\include" />
+					<Add directory="C:\libs\trimesh2_mingw\include\GL" />
+				</Compiler>
+				<Linker>
+					<Add library="C:\libs\trimesh2_mingw\lib.Win32\libgluit.a" />
+					<Add library="C:\libs\trimesh2_mingw\lib.Win32\libtrimesh.a" />
+					<Add library="C:\libs\glew\lib\glew32.lib" />
+					<Add library="C:\libs\glew\lib\glew32mx.lib" />
+					<Add library="C:\libs\glew\lib\glew32mxs.lib" />
+					<Add library="C:\libs\glew\lib\glew32s.lib" />
+				</Linker>
+			</Target>
+			<Target title="Release">
+				<Option output="bin\Release\GPUcontours" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj\Release\" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O3" />
+					<Add option="-fopenmp" />
+					<Add directory="C:\libs\trimesh2_mingw\include" />
+					<Add directory="C:\libs\trimesh2_mingw\include\GL" />
+					<Add directory="C:\libs\glew\include" />
+					<Add directory="C:\libs\glew\include\GL" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-fopenmp" />
+					<Add library="C:\libs\glew\lib\glew32s.lib" />
+					<Add library="C:\libs\trimesh2_mingw\lib.Win32\libgluit.a" />
+					<Add library="C:\libs\trimesh2_mingw\lib.Win32\libtrimesh.a" />
+					<Add library="C:\MinGW\lib\libgdi32.a" />
+					<Add library="C:\MinGW\lib\libopengl32.a" />
+					<Add library="C:\MinGW\lib\libwinmm.a" />
+					<Add library="C:\MinGW\lib\libm.a" />
+					<Add library="C:\MinGW\lib\libglu32.a" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename="mesh_view.cc" />
+		<Unit filename="sc.frag" />
+		<Unit filename="sc.vert" />
+		<Unit filename="textfile.cpp" />
+		<Unit filename="textfile.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
