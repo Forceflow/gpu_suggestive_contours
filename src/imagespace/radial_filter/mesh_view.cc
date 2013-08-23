@@ -4,6 +4,8 @@ Princeton University
 
 mesh_view.cc
 Simple viewer
+
+Extended for shader contours by Jeroen Baert
 */
 
 #define GL_GLEXT_PROTOTYPES
