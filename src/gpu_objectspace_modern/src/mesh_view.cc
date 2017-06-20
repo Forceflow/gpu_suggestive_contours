@@ -6,7 +6,8 @@
  * www.forceflow.be
  */
 
- #define GLEW_STATIC
+// we gonna link GLEW into our executable
+#define GLEW_STATIC
 
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -30,6 +31,7 @@ using std::cout;
 using std::endl;
 
 using namespace std;
+using namespace trimesh;
 
 struct Timer {
 	clock_t Begin;
@@ -334,7 +336,7 @@ void update_bsph()
 	bool some_vis = false;
 	for (unsigned int i = 0; i < meshes.size(); i++) {
 		if (!visible[i])
-			continue;
+			continue;z
 		some_vis = true;
 		point c = xforms[i] * meshes[i]->bsphere.center;
 		float r = meshes[i]->bsphere.r;

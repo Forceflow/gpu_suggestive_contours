@@ -139,13 +139,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\FPSCounter.cpp" />
-    <ClCompile Include="src\mesh_view.cc" />
-    <ClCompile Include="src\textfile.cpp" />
+    <ClCompile Include="..\..\src\FPSCounter.cpp" />
+    <ClCompile Include="..\..\src\mesh_view.cc" />
+    <ClCompile Include="..\..\src\textfile.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\FPSCounter.h" />
-    <ClInclude Include="src\textfile.h" />
+    <ClInclude Include="..\..\src\FPSCounter.h" />
+    <ClInclude Include="..\..\src\textfile.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

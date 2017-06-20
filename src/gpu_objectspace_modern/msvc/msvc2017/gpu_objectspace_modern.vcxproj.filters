@@ -15,22 +15,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\FPSCounter.cpp">
+    <ClCompile Include="..\..\src\FPSCounter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\mesh_view.cc">
+    <ClCompile Include="..\..\src\mesh_view.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\textfile.cpp">
+    <ClCompile Include="..\..\src\textfile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\FPSCounter.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="..\..\src\FPSCounter.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\textfile.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="..\..\src\textfile.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
