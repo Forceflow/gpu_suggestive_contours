@@ -11,7 +11,9 @@
 
 #include <GL/glew.h>
 #include <GL/gl.h>
+// TODO: FREEGLUT to GLFW (maybe initially stick with GLUT)
 #include <GL/glut.h>
+// TODO/ change glui with IMGUI
 #include <GL/glui.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -242,6 +244,7 @@ void draw_mesh(int i)
 	const TriMesh *themesh = meshes[i];
 
 	// Matrix pushing for viewport
+	// TODO: Change all this with GLM lookat()
 	glPushMatrix();
 	glMultMatrixd(xforms[i]);
 
@@ -251,6 +254,8 @@ void draw_mesh(int i)
 	glCullFace(GL_BACK);
 	glEnable(GL_CULL_FACE);
 
+	// PUSHING PARAMETERS TO GPU
+	// TODO: Not all of these have to updated every frame
 	// setup uniform variables (these are the same for every vertex)
 	camera_pos = inv(global_xf) * point(0,0,0);
 	glUniform3fARB(loc_cam, camera_pos[0], camera_pos[1], camera_pos[2]);
