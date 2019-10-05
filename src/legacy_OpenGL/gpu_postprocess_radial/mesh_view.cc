@@ -1,57 +1,44 @@
-/**
- * mesh_viewer
- * Original by Szymon Rusinkiewicz
- *
- * Modified for suggestive contour rendering with shaders by Jeroen Baert
- * www.forceflow.be
- */
+/*
+Szymon Rusinkiewicz
+Princeton University
 
- #define GLEW_STATIC
+mesh_view.cc
+Simple viewer
+*/
 
+#define GL_GLEXT_PROTOTYPES
+
+// GL includes
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glut.h>
 #include <GL/glui.h>
+#include "glext.h"
+// Standard includes
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <string>
 #include <malloc.h>
+#include <sstream>
+// Own includes
 #include "TriMesh.h"
+#include "textfile.h"
 #include "XForm.h"
 #include "GLCamera.h"
 #include "ICP.h"
-#include "textfile.h"
-#include <sstream>
-#include "time.h"
+#include "FPSCounter.h"
 
+// Because we love strings
 using std::string;
 using std::cout;
 using std::endl;
 
-using namespace std;
+// Rendering parameters
+int WIDTH = 512;
+int RADIUS = 5;
 
-struct Timer {
-	clock_t Begin;
-	Timer(){
-		Begin = clock() * CLK_TCK;
-	}
-	void reset(){
-		Begin = clock() * CLK_TCK;
-	}
-	double getTimeMilliseconds(){
-		clock_t End = clock() * CLK_TCK;
-		return (End - Begin)/1000;
-	}
-};
-
-// Render params
-float c_limit = 1.0;
-float sc_limit = 1.0;
-float dwkr_limit = 0.05;
-bool jeroenmethod = true;
-
-// Globals
+// Global variables
 vector<TriMesh *> meshes;
 vector<xform> xforms;
 vector<bool> visible;
@@ -59,38 +46,32 @@ vector<string> xffilenames;
 TriMesh::BSphere global_bsph;
 xform global_xf;
 GLCamera camera;
+vec camera_pos;
 GLUI* glui_window;
 
-//camera position
-vec camera_pos;
+// Program variables
 int current_mesh = -1;
-bool draw_lit = true;
-bool draw_falsecolor = false;
-bool draw_index = false;
-bool white_bg = true;
+bool draw_lit = true; // always true, we need diffuse shaded object
 
-// feature size
-float feature_size;
+// Textures
+GLuint depth_texture;
+GLuint color_texture;
 
-// shader globals
-GLhandleARB v,f,p;
-
-// shader locations
-GLint loc_cam;
-GLint loc_fz;
-GLint loc_c_limit;
-GLint loc_sc_limit;
-GLint loc_dwkr_limit;
-GLint loc_jeroenmethod;
-
-// vertex buffer objects for vertex data
+// Vertex Buffer Objects
 GLuint vbo_base;
 GLuint vbo_normal;
-GLuint vbo_pdir1;
-GLuint vbo_pdir2;
-GLuint vbo_curv1;
-GLuint vbo_curv2;
-GLuint vbo_dcurv;
+
+// Shader programs
+GLhandleARB shader_radial;
+GLhandleARB shader_radial_vert;
+GLhandleARB shader_radial_frag;
+
+// Uniform locations
+GLint loc_radius;
+GLint loc_width;
+
+// Performance counters
+FPSCounter* fps;
 
 // Make some mesh current
 void set_current(int i)
@@ -117,7 +98,23 @@ void need_redraw()
 	glutPostRedisplay();
 }
 
-int printOglError(char *file, int line)
+// Clear the screen
+void cls()
+{
+	glDisable(GL_DITHER);
+	glDisable(GL_BLEND);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_NORMALIZE);
+	glDisable(GL_LIGHTING);
+	glDisable(GL_NORMALIZE);
+	glDisable(GL_COLOR_MATERIAL);
+	glClearColor(1, 1, 1, 0);
+	glClearDepth(1);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+}
+
+static int printOglError(char *file, int line)
 {
     GLenum glErr;
     int    retCode = 0;
@@ -133,85 +130,54 @@ int printOglError(char *file, int line)
 }
 
 
-void printInfoLog(GLhandleARB obj, bool newline)
+static void printInfoLog(GLhandleARB obj)
 {
     int infologLength = 0;
     int charsWritten  = 0;
     char *infoLog;
 
-	glGetObjectParameterivARB(obj, GL_OBJECT_INFO_LOG_LENGTH_ARB,
-                                         &infologLength);
+	glGetObjectParameterivARB(obj, GL_OBJECT_INFO_LOG_LENGTH_ARB,&infologLength);
 
     if (infologLength > 0)
     {
         infoLog = (char *)malloc(infologLength);
         glGetInfoLogARB(obj, infologLength, &charsWritten, infoLog);
-		if(newline){printf("%s\n",infoLog);}
-		else{printf("%s",infoLog);}
+		printf("%s\n",infoLog);
         free(infoLog);
     }
 }
 
-void load_shader(GLhandleARB &program, GLhandleARB &vertex, GLhandleARB &frag, string vertex_filename, string frag_filename)
+void setup_uniforms()
 {
-	// reusable char pointers to read files
-	char *vs = NULL,*fs = NULL;
-	// Create shader objects
-	vertex = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
-	frag = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
-	// Read sources for these objects
-	vs = textFileRead(vertex_filename.c_str()); const char * vv = vs; glShaderSourceARB(vertex, 1, &vv,NULL);
-	fs = textFileRead(frag_filename.c_str()); const char * ff = fs; glShaderSourceARB(frag, 1, &ff,NULL);
-	free(vs);free(fs);
-	// Compile the shader objects and print info on compile
-	glCompileShaderARB(vertex); printInfoLog(vertex,false);
-	glCompileShaderARB(frag); printInfoLog(frag,true);
-	// Create shader program object and attach vertex/frag objects
-	program = glCreateProgramObjectARB();
-	glAttachObjectARB(program,vertex);
-	glAttachObjectARB(program,frag);
-	// Link shader program and print info on linking
-	glLinkProgramARB(program), printInfoLog(program,false);
+	glUniform1iARB(loc_radius, RADIUS);
+	glUniform1iARB(loc_width, WIDTH);
 }
 
-void setup_shaders()
+// Set up lights and materials
+void setup_lighting(int id)
 {
-	load_shader(p,v,f,"sc.vert","sc.frag");
-	glUseProgramObjectARB(p);
-	// get var locations once and for all
-	loc_cam = glGetUniformLocationARB(p,"cam_pos");
-	loc_fz = glGetUniformLocationARB(p,"fz");
-	loc_c_limit = glGetUniformLocationARB(p,"c_limit");
-	loc_sc_limit = glGetUniformLocationARB(p,"sc_limit");
-	loc_dwkr_limit = glGetUniformLocationARB(p,"dwkr_limit");
-	loc_jeroenmethod = glGetUniformLocationARB(p,"jeroenmethod");
-}
-
-// Clear the screen
-void cls()
-{
-	glDisable(GL_DITHER);
-	glDisable(GL_BLEND);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_NORMALIZE);
-	glDisable(GL_LIGHTING);
-	glDisable(GL_NORMALIZE);
-	glDisable(GL_COLOR_MATERIAL);
-	if (white_bg)
-		glClearColor(1, 1, 1, 0);
-	else
-		glClearColor(0.08, 0.08, 0.08, 0);
-	glClearDepth(1);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	Color c(1.0f);
+	glColor3fv(c);
+	GLfloat light0_diffuse[] = { 0.85, 0.85, 0.85, 0.85 };
+	GLfloat light0_position[] = { camera_pos[0], camera_pos[1], camera_pos[2], 0.0};
+	glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
+	glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
+	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_FALSE);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_COLOR_MATERIAL);
+	glEnable(GL_NORMALIZE);
 }
 
 // Draw triangle strips.  They are stored as length followed by values.
 void draw_tstrips(const TriMesh *themesh)
 {
-	// testing for glArrayElement support
 	static bool use_glArrayElement = false;
 	static bool tested_renderer = false;
-	if (!tested_renderer) {use_glArrayElement = !!strstr((const char *) glGetString(GL_RENDERER), "Intel");
+	if (!tested_renderer) {
+		use_glArrayElement = !!strstr(
+			(const char *) glGetString(GL_RENDERER), "Intel");
 		tested_renderer = true;
 	}
 
@@ -239,91 +205,174 @@ void draw_mesh(int i)
 {
 	const TriMesh *themesh = meshes[i];
 
-	// Matrix pushing for viewport
 	glPushMatrix();
 	glMultMatrixd(xforms[i]);
 
-	// setup depth functions
+	// we need the depth tests
 	glDepthFunc(GL_LESS);
 	glEnable(GL_DEPTH_TEST);
 	glCullFace(GL_BACK);
 	glEnable(GL_CULL_FACE);
 
-	// setup uniform variables (these are the same for every vertex)
-	camera_pos = inv(global_xf) * point(0,0,0);
-	glUniform3fARB(loc_cam, camera_pos[0], camera_pos[1], camera_pos[2]);
-	glUniform1fARB(loc_fz, feature_size);
-	glUniform1fARB(loc_c_limit, c_limit);
-	glUniform1fARB(loc_sc_limit, sc_limit);
-	glUniform1fARB(loc_dwkr_limit, dwkr_limit);
-	glUniform1fARB(loc_jeroenmethod, jeroenmethod);
-
-	// Vertices
+	// Vertices (in VBO)
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_base);
-	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_VERTEX_ARRAY); // enable vertices
 	glVertexPointer(3, GL_FLOAT,0,0);
-	// Normals
+	// Normals (in VBO)
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_normal);
-	glEnableClientState(GL_NORMAL_ARRAY);
+	glEnableClientState(GL_NORMAL_ARRAY); // enable vertices
 	glNormalPointer(GL_FLOAT,0,0);
-	// setup texture coords
-	glClientActiveTexture(GL_TEXTURE1);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_pdir1);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	glTexCoordPointer(3,GL_FLOAT, 0,0);
-
-	glClientActiveTexture(GL_TEXTURE2);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_pdir2);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	glTexCoordPointer(3,GL_FLOAT, 0,0);
-
-	glClientActiveTexture(GL_TEXTURE3);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_curv1);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	glTexCoordPointer(1,GL_FLOAT, 0,0);
-
-	glClientActiveTexture(GL_TEXTURE4);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_curv2);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	glTexCoordPointer(1,GL_FLOAT, 0,0);
-
-	glClientActiveTexture(GL_TEXTURE5);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_dcurv);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	glTexCoordPointer(4,GL_FLOAT, 0,0);
+	// switch off VBO's again
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 
-	// disable unnecessary stuff and then draw
-	glDisable(GL_LIGHTING);
-	glDisableClientState(GL_COLOR_ARRAY);
-	glDisable(GL_COLOR_MATERIAL);
 	draw_tstrips(themesh);
 
+	glPopMatrix();
+}
+
+/**
+ * Draw a full size quad covering the whole screen, regardless of camera standpoint.
+ * This quad has texture coords, so we can overlay a texture on it.
+ */
+void drawFullsizeQuad()
+{
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glBegin(GL_QUADS);
+	glMultiTexCoord2f(GL_TEXTURE0, 0.0, 0.0);	glMultiTexCoord2f(GL_TEXTURE1, 0.0, 0.0);	glVertex3f(-1.0, -1.0, 0.0);
+	glMultiTexCoord2f(GL_TEXTURE0, 1.0, 0.0);	glMultiTexCoord2f(GL_TEXTURE1, 1.0, 0.0);	glVertex3f(1.0, -1.0, 0.0);
+	glMultiTexCoord2f(GL_TEXTURE0, 1.0, 1.0);   glMultiTexCoord2f(GL_TEXTURE1, 1.0, 1.0);	glVertex3f(1.0, 1.0, 0.0);
+	glMultiTexCoord2f(GL_TEXTURE0, 0.0, 1.0);	glMultiTexCoord2f(GL_TEXTURE1, 0.0, 1.0);   glVertex3f(-1.0, 1.0, 0.0);
+	glEnd();
+
+	glPopMatrix();
+
+	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 }
 
 // Draw the scene
 void redraw()
 {
-    Timer t = Timer();
+	// position camera, push matrices, and clear screen
 	camera.setupGL(global_xf * global_bsph.center, global_bsph.r);
+	camera_pos = inv(global_xf) * point(0,0,0);
 	glPushMatrix();
 	glMultMatrixd(global_xf);
 	cls();
-	for (int i = 0; i < meshes.size(); i++)
+
+	// draw the diffuse-shaded mesh to fill the color buffer
+	for (unsigned int i = 0; i < meshes.size(); i++)
 	{
-		if (!visible[i])
-			continue;
+		if (!visible[i]){continue;}
+		setup_lighting(i);
 		draw_mesh(i);
 	}
+
+	// copy rendered frame to color texture
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, color_texture);
+	glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, WIDTH, WIDTH);
+
+	// clear screen
+	cls();
+    // enable shader
+    glUseProgramObjectARB(shader_radial);
+    setup_uniforms();
+	// draw a fullsize quad to force shader computation
+	drawFullsizeQuad();
+	// disable shader
+	glUseProgramObjectARB(0);
+
 	glPopMatrix();
 	glutSwapBuffers();
 	fflush(stdout);
-
-	std::stringstream out;
-	out << "NPR Thesis Jeroen Baert | Polys: " << meshes[0]->faces.size() << " | FPS: " << 1000.0f / t.getTimeMilliseconds();
-	string s = out.str();
+	// update FPS counter
+	fps->updateCounter();
+	std::stringstream out;out << "NPR Thesis Jeroen Baert - GPU Imagespace | Pol: " << meshes[0]->faces.size() << " | FPS: " << fps->FPS;string s = out.str();
 	glutSetWindowTitle(s.c_str());
+}
+
+void load_shader(GLhandleARB &program, GLhandleARB &vertex, GLhandleARB &frag, string vertex_filename, string frag_filename)
+{
+	// reusable char pointers to read files
+	char *vs = NULL,*fs = NULL;
+	// Create shader objects
+	vertex = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
+	frag = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
+	// Read sources for these objects
+	vs = textFileRead(vertex_filename.c_str()); const char * vv = vs; glShaderSourceARB(vertex, 1, &vv,NULL);
+	fs = textFileRead(frag_filename.c_str()); const char * ff = fs; glShaderSourceARB(frag, 1, &ff,NULL);
+	free(vs);free(fs);
+	// Compile the shader objects and print info on compile
+	glCompileShaderARB(vertex); printInfoLog(vertex);
+	glCompileShaderARB(frag); printInfoLog(frag);
+	// Create shader program object and attach vertex/frag objects
+	program = glCreateProgramObjectARB();
+	glAttachObjectARB(program,vertex);
+	glAttachObjectARB(program,frag);
+	// Link shader program and print info on linking
+	glLinkProgramARB(program), printInfoLog(program);
+}
+
+void setup_shaders()
+{
+	// load Sobel shader
+	load_shader(shader_radial,shader_radial_vert,shader_radial_frag,"radial.vert","radial.frag");
+
+	// activate shader for texture binding
+	glUseProgramObjectARB(shader_radial);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, color_texture);
+	GLint handle = glGetUniformLocationARB(shader_radial, "color");
+	glUniform1iARB(handle, 0);
+
+	// get locations of uniforms
+	loc_radius = glGetUniformLocationARB(shader_radial, "radius");
+	loc_width = glGetUniformLocationARB(shader_radial, "renderwidth");
+
+	// disable shader
+	glUseProgramObjectARB(0);
+}
+
+void setup_textures()
+{
+	glGenTextures(1, &color_texture);
+	glBindTexture(GL_TEXTURE_2D, color_texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, WIDTH, WIDTH, 0, GL_RGB, GL_FLOAT, NULL);
+}
+
+void setupVBOs()
+{
+	// generate a vertex buffer object
+	glGenBuffersARB(1, &vbo_base);
+	// bind it and specify kind of data
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_base);
+	// upload data to VBO: we're sending data that will remain STATIC (base mesh is unchanged) and is used for DRAWing.
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, meshes[0]->vertices.size()*sizeof(float)*3, &(meshes[0]->vertices[0]), GL_STATIC_DRAW_ARB);
+	int bufferSize;
+    glGetBufferParameterivARB(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SIZE_ARB, &bufferSize);
+    std::cout << "Vertex array loaded in VBO: " << bufferSize << " bytes\n";
+
+	// do the same for normals
+	glGenBuffersARB(1, &vbo_normal);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_normal);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, meshes[0]->normals.size()*sizeof(float)*3, &(meshes[0]->normals[0]), GL_STATIC_DRAW_ARB);
+    glGetBufferParameterivARB(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SIZE_ARB, &bufferSize);
+    std::cout << "Normal array loaded in VBO: " << bufferSize << " bytes\n";
+
+	// don't use any VBO right now, this would fudge with pointer arithmetic
+    glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 }
 
 // Update global bounding sphere.
@@ -332,8 +381,8 @@ void update_bsph()
 	point boxmin(1e38, 1e38, 1e38);
 	point boxmax(-1e38, -1e38, -1e38);
 	bool some_vis = false;
-	for (unsigned int i = 0; i < meshes.size(); i++) {
-		if (!visible[i])
+	for (int i = 0; i < meshes.size(); i++) {
+		if (!visible[i])	
 			continue;
 		some_vis = true;
 		point c = xforms[i] * meshes[i]->bsphere.center;
@@ -349,8 +398,8 @@ void update_bsph()
 	float &gr = global_bsph.r;
 	gc = 0.5f * (boxmin + boxmax);
 	gr = 0.0f;
-	for (unsigned int i = 0; i < meshes.size(); i++) {
-		if (!visible[i])
+	for (int i = 0; i < meshes.size(); i++) {
+		if (!visible[i])	
 			continue;
 		point c = xforms[i] * meshes[i]->bsphere.center;
 		float r = meshes[i]->bsphere.r;
@@ -438,6 +487,7 @@ void save_xforms()
 	}
 }
 
+
 // ICP
 void do_icp(int n)
 {
@@ -454,7 +504,6 @@ void do_icp(int n)
 	need_redraw();
 }
 
-
 // Handle mouse button and motion events
 static unsigned buttonstate = 0;
 
@@ -467,7 +516,6 @@ void doubleclick(int button, int x, int y)
 	glClearColor(1,1,1,1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	draw_index = true;
 	glPushMatrix();
 	glMultMatrixd(global_xf);
 	for (int i = 0; i < meshes.size(); i++) {
@@ -479,7 +527,6 @@ void doubleclick(int button, int x, int y)
 		draw_mesh(i);
 	}
 	glPopMatrix();
-	draw_index = false;
 	GLint V[4];
 	glGetIntegerv(GL_VIEWPORT, V);
 	y = int(V[1] + V[3]) - 1 - y;
@@ -558,6 +605,7 @@ void mousebuttonfunc(int button, int state, int x, int y)
 	mousemotionfunc(x, y);
 }
 
+
 // Idle callback
 void idle()
 {
@@ -589,16 +637,6 @@ void keyboardfunc(unsigned char key, int x, int y)
 			else
 				set_current(-1);
 			break;
-        case 'j':
-			jeroenmethod = !jeroenmethod;
-			cout << "jeroenmethod " << jeroenmethod << endl;
-			break;
-		case 'f':
-			draw_falsecolor = !draw_falsecolor; break;
-		case 'l':
-			draw_lit = !draw_lit; break;
-		case 'w':
-			white_bg = !white_bg; break;
 		case 'I':
 			dump_image(); break;
 		case Ctrl+'x':
@@ -624,68 +662,9 @@ void usage(const char *myname)
 	exit(1);
 }
 
-void setupVBOs()
-{
-	int bufferSize;
-
-	// generate a vertex buffer object
-	glGenBuffersARB(1, &vbo_base);
-	// bind it and specify kind of data
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_base);
-	// upload data to VBO: we're sending data that will remain STATIC (base mesh is unchanged) and is used for DRAWing.
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, meshes[0]->vertices.size()*sizeof(float)*3, &(meshes[0]->vertices[0]), GL_STATIC_DRAW_ARB);
-    glGetBufferParameterivARB(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SIZE_ARB, &bufferSize);
-    std::cout << "Vertex array loaded in VBO: " << bufferSize << " bytes\n";
-
-	// do the same for normals
-	glGenBuffersARB(1, &vbo_normal);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_normal);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, meshes[0]->normals.size()*sizeof(float)*3, &(meshes[0]->normals[0]), GL_STATIC_DRAW_ARB);
-    glGetBufferParameterivARB(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SIZE_ARB, &bufferSize);
-    std::cout << "Normal array loaded in VBO: " << bufferSize << " bytes\n";
-
-	// do the same for pdir1
-	glGenBuffersARB(1, &vbo_pdir1);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_pdir1);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, meshes[0]->pdir1.size()*sizeof(float)*3, &(meshes[0]->pdir1[0]), GL_STATIC_DRAW_ARB);
-    glGetBufferParameterivARB(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SIZE_ARB, &bufferSize);
-    std::cout << "PDIR1 array loaded in VBO: " << bufferSize << " bytes\n";
-
-	// do the same for pdir2
-	glGenBuffersARB(1, &vbo_pdir2);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_pdir2);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, meshes[0]->pdir2.size()*sizeof(float)*3, &(meshes[0]->pdir2[0]), GL_STATIC_DRAW_ARB);
-    glGetBufferParameterivARB(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SIZE_ARB, &bufferSize);
-    std::cout << "PDIR2 array loaded in VBO: " << bufferSize << " bytes\n";
-
-	// do the same for curv1
-	glGenBuffersARB(1, &vbo_curv1);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_curv1);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, meshes[0]->curv1.size()*sizeof(float), &(meshes[0]->curv1[0]), GL_STATIC_DRAW_ARB);
-    glGetBufferParameterivARB(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SIZE_ARB, &bufferSize);
-    std::cout << "CURV1 array loaded in VBO: " << bufferSize << " bytes\n";
-
-	// do the same for curv2
-	glGenBuffersARB(1, &vbo_curv2);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_curv2);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, meshes[0]->curv2.size()*sizeof(float), &(meshes[0]->curv2[0]), GL_STATIC_DRAW_ARB);
-    glGetBufferParameterivARB(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SIZE_ARB, &bufferSize);
-    std::cout << "CURV2 array loaded in VBO: " << bufferSize << " bytes\n";
-
-	// do the same for dcurv
-	glGenBuffersARB(1, &vbo_dcurv);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo_dcurv);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, meshes[0]->dcurv.size()*sizeof(float)*4, &(meshes[0]->dcurv[0]), GL_STATIC_DRAW_ARB);
-    glGetBufferParameterivARB(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SIZE_ARB, &bufferSize);
-    std::cout << "DCURV array loaded in VBO: " << bufferSize << " bytes\n";
-
-	// disable VBO's to not disturb pointer arithmetic
-    glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-}
-
 int main(int argc, char *argv[])
 {
-	glutInitWindowSize(720, 720);
+	glutInitWindowSize(WIDTH, WIDTH);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 	glutInit(&argc, argv);
 
@@ -700,9 +679,6 @@ int main(int argc, char *argv[])
 		themesh->need_normals();
 		themesh->need_tstrips();
 		themesh->need_bsphere();
-		themesh->need_curvatures();
-		themesh->need_dcurv();
-		feature_size = themesh->feature_size();
 		meshes.push_back(themesh);
 
 		string xffilename = xfname(filename);
@@ -712,8 +688,7 @@ int main(int argc, char *argv[])
 		visible.push_back(true);
 	}
 
-
-	glutCreateWindow("Thesis Shader viewer");
+	glutCreateWindow(argv[1]);
 	glutDisplayFunc(redraw);
 	glutMouseFunc(mousebuttonfunc);
 	glutMotionFunc(mousemotionfunc);
@@ -722,39 +697,32 @@ int main(int argc, char *argv[])
 
 	//  Create GLUI window
 	glui_window = GLUI_Master.create_glui ("Options");
-	glui_window->add_slider("Contour limit", GLUI_SLIDER_FLOAT, 0, 10, &c_limit);
-	glui_window->add_slider("Suggestive Contour limit", GLUI_SLIDER_FLOAT, 0, 10, &sc_limit);
-	glui_window->add_slider("DwKr limit", GLUI_SLIDER_FLOAT, 0, 0.5, &dwkr_limit);
+	glui_window->add_slider("Edge Detection Radius", GLUI_SLIDER_INT, 1, 15, &RADIUS);
 	glui_window->sync_live();
 
+	// init GLEW to use all the magic
 	glewInit();
 
-	// setup shaders
+	// textures
+	setup_textures();
+
+	// shaders
 	printf ("Checking for GLSL support ...");
 	if (GLEW_ARB_vertex_shader && GLEW_ARB_fragment_shader)
 	{printf("OK\n");
 	setup_shaders();}
 	else{printf("No GLSL support. This application requires at least OpenGL 1.4 with ARB extensions.\n");exit(3);}
 
-	// setup VBO
+	// VBO
 	printf ("Checking for Vertex Buffer Object support ...");
 	if (GLEW_ARB_vertex_buffer_object)
 	{printf(" OK\n");
 	setupVBOs();}
 	else{printf("No VBO support. This application requires at least OpenGL 1.4 with ARB extensions.\n");exit(3);}
 
-	// setup Multitexture
-	printf ("Checking for Multitexture support ...");
-	if (GLEW_ARB_multitexture)
-	{printf(" OK\n");}
-	else{printf("No Multitexture support. This application requires at least OpenGL 1.4 with ARB extensions.\n");exit(3);}
-
-	// check amount of textures
-	GLint iUnits; glGetIntegerv(GL_MAX_TEXTURE_UNITS, &iUnits);
-	cout << "Amount of texture units available: " << iUnits;
-
+	// Create FPS counter
+	fps = new FPSCounter();
+	camera_pos = inv(global_xf) * point(0,0,0);
 	resetview();
 	glutMainLoop();
 }
-
-

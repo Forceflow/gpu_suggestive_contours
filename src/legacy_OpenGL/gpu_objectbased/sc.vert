@@ -8,8 +8,6 @@ uniform vec3 cam_pos;
 varying float ndotv;
 varying float t_kr;
 varying float t_dwkr;
-varying vec3 view;
-varying vec3 w;
 
 void main()
 {
@@ -20,9 +18,9 @@ void main()
 	vec4 dcurv = gl_MultiTexCoord5.stpq;
 	
 	// compute vector to cam
-	view = cam_pos - vec3(gl_Vertex.x,gl_Vertex.y,gl_Vertex.z);
+	vec3 view = cam_pos - vec3(gl_Vertex.x,gl_Vertex.y,gl_Vertex.z);
 	
-	// compute ndotv (and divide by view)
+	// compute ndotv (and normalize view)
 	ndotv = (1.0f / length(view)) * dot(gl_Normal,view);
 	
 	// optimalisation: if this vector points away from cam, don't even bother computing the rest.
@@ -30,7 +28,7 @@ void main()
 	if(!(ndotv < 0.0f))
 	{
 		// compute kr
-		w = normalize(view - gl_Normal * dot(view, gl_Normal));
+		vec3 w = normalize(view - gl_Normal * dot(view, gl_Normal));
   		float u = dot(w, pdir1);
   		float v = dot(w, pdir2);
   		float u2 = u*u;

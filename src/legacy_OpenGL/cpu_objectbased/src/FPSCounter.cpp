@@ -1,6 +1,8 @@
 /*
  * FPSCounter.cpp
  *
+ * Easy and slightly inaccurate FPS counter
+ *
  *  Created on: Mar 14, 2010
  *      Author: jeroen
  */
@@ -14,13 +16,17 @@ using std::string;
 using std::cout;
 using std::endl;
 
-FPSCounter::FPSCounter()
-{
+FPSCounter::FPSCounter(){
 	lasttime = now();
 	FPS = 0;
 	frames = 0;
 }
 
-void FPSCounter::updateCounter()
-{
+void FPSCounter::updateCounter(){
+	if(now().tv_sec - lasttime.tv_sec >= 1){
+		FPS = frames;
+		frames = 0;
+	}
+	lasttime = now();
+	frames++;
 }
