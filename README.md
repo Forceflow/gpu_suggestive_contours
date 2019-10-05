@@ -1,15 +1,18 @@
 gpu_suggestive_contours
 =======================
 
-Experiments with rendering Suggestive Contours
+Experiments in rendering Suggestive Contours
 
- - More info on: http://www.forceflow.be/thesis/thesis-code/
- - Requirements: Support for fragment/pixel shaders, Trimesh2 library.
+Video demonstrating the effect:
+
+[![IMAGE ALT TEXT](http://img.youtube.com/vi/meI1kt2UQtQ/0.jpg)](http://www.youtube.com/watch?v=meI1kt2UQtQ)
 
 ## Legacy
 
-The legacy_OpenGL directory contains experiments I did in 2009-2010. These are all based on legacy OpenGL (pre 3.x fixed function pipeline).
-They are all built on the mesh_viewer utility from [TriMesh2](https://gfx.cs.princeton.edu/proj/trimesh2/), version 2.9. Newer Trimesh2 version (even my own [Trimesh2 fork](https://github.com/Forceflow/trimesh2)) will probably not work to get these projects up and running.
+The ``legacy_OpenGL`` directory contains experiments I did for my compsci [Master's thesis](https://www.forceflow.be/thesis/overview/) in 2009-2010. These are all based on legacy OpenGL (pre 3.x fixed function pipeline).
+They are built on the mesh_viewer utility from [TriMesh2](https://gfx.cs.princeton.edu/proj/trimesh2/), version 2.9. Newer Trimesh2 versions (even my own [Trimesh2 fork](https://github.com/Forceflow/trimesh2)) will probably not work to get these projects up and running.
+
+The variants I generated differ in the approach they take to generate contours and suggestive contours:
 
  - **cpu_objectspace:** Generation of contours multi-threaded on CPU. Drawn using GL_LINE. Not fast.
  - **gpu_objectbased:** A mix between pre-generating properties once on CPU and doing the per-frame calculations in a vertex + fragment shader. Faster.
