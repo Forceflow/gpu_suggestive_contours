@@ -1,0 +1,14 @@
+{
+  "name": "sc_threejs",
+  "version": "0.0.1",
+  "description": "Suggestive Contours implementations for ThreeJS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jeroen Baert",
+  "license": "ISC",
+  "dependencies": {
+    "three": "^0.109.0"
+  }
+}
