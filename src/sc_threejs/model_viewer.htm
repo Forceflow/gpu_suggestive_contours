@@ -1,14 +1,34 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta charset="utf-8">
-		<title>SC_ThreeJS</title>
-		<style>
-			body { margin: 0; }
-			canvas { width: 100%; height: 100% }
-		</style>
-	</head>
-	<body>
-		<script src="js/model_viewer.js" type="module"></script>
-	</body>
+
+<head>
+	<meta charset="utf-8">
+	<title>Suggestive Contours ThreeJS: A Simple Model Viewer</title>
+	<div id="info">This should be a basic model viewer</div>
+	<style>
+		body {
+			margin: 0;
+		}
+
+		canvas {
+			width: 100%;
+			height: 100%
+		}
+
+		#info {
+			position: absolute;
+			top: 10px;
+			width: 100%;
+			color:antiquewhite;
+			text-align: center;
+			z-index: 100;
+			display: block;
+		}
+	</style>
+</head>
+
+<body>
+	<script src="js/model_viewer.js" type="module"></script>
+</body>
+
 </html>

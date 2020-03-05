@@ -9,6 +9,6 @@
   "author": "Jeroen Baert",
   "license": "ISC",
   "dependencies": {
-    "three": "^0.109.0"
+    "three": "^0.114.0"
   }
 }

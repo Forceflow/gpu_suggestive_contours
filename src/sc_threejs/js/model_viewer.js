@@ -1,13 +1,13 @@
 import * as THREE from '../node_modules/three/build/three.module.js';
 import { OBJLoader } from '../node_modules/three/examples/jsm/loaders/OBJLoader.js';
-import { OrbitControls } from '../node_modules/three/examples/jsm/controls/OrbitControls.js';
+// import { OrbitControls } from '../node_modules/three/examples/jsm/controls/OrbitControls.js';
 import { TrackballControls } from '../node_modules/three/examples/jsm/controls/TrackballControls.js'
 import Stats from '../node_modules/three/examples/jsm/libs/stats.module.js'
+import GUI from '../node_modules/three/examples/jsm/libs/dat.gui.module.js'
 
 // STATS
 var stats = new Stats();
 document.body.appendChild(stats.domElement);
-
 
 // SCENE
 var scene = new THREE.Scene();
@@ -50,16 +50,19 @@ loader.load(
 
 camera.position.z = 5;
 
-
-
 var light = new THREE.PointLight( 0x2047ff, 50, 0 );
 light.position.set(0,0,5);
 scene.add( light );
 
+// TRACKBALL CONTROLS
 var controls = new TrackballControls( camera, renderer.domElement );
 
+// AXIS
 var axesHelper = new THREE.AxesHelper( 5 );
 scene.add( axesHelper );
+
+// GUI
+// todo
 
 var animate = function () {
     requestAnimationFrame(animate);
