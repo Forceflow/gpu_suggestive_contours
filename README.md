@@ -20,7 +20,7 @@ Requirements for all
 The variants I generated differ in the approach they take to generate contours and suggestive contours:
 
  - **cpu_objectspace:** Generation of contours multi-threaded on CPU. Drawn using GL_LINE. Not fast.
-   - In may 2020, I upgraded this code to run in a more modern environment. The conversion was 
+   - In may 2020, I upgraded this code to run in a more modern environment. The conversion was quick and dirty, but at least it compiles and runs.
    - There is a recent MSVC project for this now: you can find it in the `legacy_OpenGL\cpu_objectbased\msvc` folder. As expected, this is still slow as molasses :)
    - Updated to recent TriMesh version 2.16
    - GLEW gets statically linked
