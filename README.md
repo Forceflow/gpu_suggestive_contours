@@ -10,14 +10,14 @@ Video demonstrating the effect:
 ## Legacy OpenGL work (2009-2010)
 
 The ``legacy_OpenGL`` directory contains experiments I did for my compsci [Master's thesis](https://www.forceflow.be/thesis/overview/) in 2009-2010. These are all based on legacy OpenGL (pre 3.x fixed function pipeline).
-They are built on the mesh_viewer utility from [TriMesh2](https://gfx.cs.princeton.edu/proj/trimesh2/)
+They are built on the mesh_viewer utility from [TriMesh2](https://gfx.cs.princeton.edu/proj/trimesh2/). The only argument you can give these executables is one or multiple paths to a 3D mesh (obj, ply, ...).
 
-Requirements for all
+**Requirements for all of these projects:**
  * [Trimesh2](https://github.com/Forceflow/trimesh2): All my code back then was based on Trimesh2 2.9. There have been some major changes in that library, so unless otherwise noted, you need that exact version to attempt building the project.
  * GLEW
  * GLUT (I use FreeGlut)
 
-The variants I generated differ in the approach they take to generate contours and suggestive contours:
+The variants I wrote differ in the approach they take to generate contours and suggestive contours:
 
  - **cpu_objectspace:** Generation of contours multi-threaded on CPU. Drawn using GL_LINE. Not fast.
    - In may 2020, I upgraded this code to run in a more modern environment. The conversion was quick and dirty, but at least it compiles and runs.
