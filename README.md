@@ -7,17 +7,32 @@ Video demonstrating the effect:
 
 [![IMAGE ALT TEXT](http://img.youtube.com/vi/meI1kt2UQtQ/0.jpg)](http://www.youtube.com/watch?v=meI1kt2UQtQ)
 
-## Legacy
+## Legacy OpenGL work (2009-2010)
 
 The ``legacy_OpenGL`` directory contains experiments I did for my compsci [Master's thesis](https://www.forceflow.be/thesis/overview/) in 2009-2010. These are all based on legacy OpenGL (pre 3.x fixed function pipeline).
-They are built on the mesh_viewer utility from [TriMesh2](https://gfx.cs.princeton.edu/proj/trimesh2/), version 2.9. Newer Trimesh2 versions (even my own [Trimesh2 fork](https://github.com/Forceflow/trimesh2)) will probably not work to get these projects up and running.
+They are built on the mesh_viewer utility from [TriMesh2](https://gfx.cs.princeton.edu/proj/trimesh2/)
+
+Requirements for all
+ * [Trimesh2](https://github.com/Forceflow/trimesh2): All my code back then was based on Trimesh2 2.9. There have been some major changes in that library, so unless otherwise noted, you need that exact version to attempt building the project.
+ * GLEW
+ * GLUT (I use FreeGlut)
 
 The variants I generated differ in the approach they take to generate contours and suggestive contours:
 
  - **cpu_objectspace:** Generation of contours multi-threaded on CPU. Drawn using GL_LINE. Not fast.
+   - In may 2020, I upgraded this code to run in a more modern environment. The conversion was 
+   - There is a recent MSVC project for this now: you can find it in the `legacy_OpenGL\cpu_objectbased\msvc` folder. As expected, this is still slow as molasses :)
+   - Updated to recent TriMesh version 2.16
+   - GLEW gets statically linked
+   - Only win32 supported
+   - In a perfect world, this would be rewritten to use GLFW and fixed-function OpenGL calls
+   - Configure your library locations in `custom_includes.prop`
  - **gpu_objectbased:** A mix between pre-generating properties once on CPU and doing the per-frame calculations in a vertex + fragment shader. Faster.
+   - Untouched, needs TriMesh 2.9
  - **gpu_postprocess_sobel:** Postprocess generation of contours using a Sobel filter based on a depth map output. Fast, but not great quality: misses a lot of the finer details.
+   - Untouched, needs TriMesh 2.9
  - **gpu_postprocess_radial:** Postprocess generation of contours using a custom radial filter based on a diffuse-shaded render output. Fast, good quality.
+   - Untouched, needs TriMesh 2.9
 
 ## New (2019)
 
