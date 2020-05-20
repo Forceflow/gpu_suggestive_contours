@@ -15,7 +15,7 @@
  * @param color : the linecolor in which the Drawer will draw its lines
  * @param linewidth: the linewidth in which the Drawer will draw its lines
  */
-FaceContourDrawer::FaceContourDrawer(vec color,float linewidth): LineDrawer(color,linewidth){
+FaceContourDrawer::FaceContourDrawer(trimesh::vec color,float linewidth): LineDrawer(color,linewidth){
 	// nothing left to do
 }
 
@@ -25,7 +25,7 @@ FaceContourDrawer::FaceContourDrawer(vec color,float linewidth): LineDrawer(colo
  * @param Model* : the model
  * @param camera_position: the current camera position, given in 3d-coordinates
  */
-void FaceContourDrawer::draw(Model* m, vec camera_position){
+void FaceContourDrawer::draw(Model* m, trimesh::vec camera_position){
 	if(isVisible()){
 		// configure OpenGL to draw nice lines
 		glPolygonOffset(5.0f, 30.0f);
@@ -49,11 +49,11 @@ void FaceContourDrawer::draw(Model* m, vec camera_position){
  *
  * @param: Model
  */
-void FaceContourDrawer::find_facelines(Model* m, vec camera_position)
+void FaceContourDrawer::find_facelines(Model* m, trimesh::vec camera_position)
 {
 	// aliases for easy coding
-	const vector<float> &ndotv = m->ndotv_;
-	const vector<TriMesh::Face> &faces = m->mesh_->faces;
+	const std::vector<float> &ndotv = m->ndotv_;
+	const std::vector<trimesh::TriMesh::Face> &faces = m->mesh_->faces;
 	// for every face
 	for(unsigned int i =0; i < m->mesh_->faces.size(); i++){
 			// vector point aliases
@@ -92,8 +92,8 @@ void FaceContourDrawer::construct_faceline(Model* m,int v0, int v1, int v2)
 	float w01 = 1.0 - w10;
 	float w20 = m->ndotv_[v0]/(m->ndotv_[v0]-m->ndotv_[v2]);
 	float w02 = 1.0 - w20;
-	vec p1 = w01 * m->mesh_->vertices[v0] + w10 * m->mesh_->vertices[v1];
-	vec p2 = w02 * m->mesh_->vertices[v0] + w20 * m->mesh_->vertices[v2];
+	trimesh::vec p1 = w01 * m->mesh_->vertices[v0] + w10 * m->mesh_->vertices[v1];
+	trimesh::vec p2 = w02 * m->mesh_->vertices[v0] + w20 * m->mesh_->vertices[v2];
 	drawbuffer_vertices_.push_back(p1);
 	drawbuffer_vertices_.push_back(p2);
 }

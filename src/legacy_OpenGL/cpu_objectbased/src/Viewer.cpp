@@ -4,28 +4,40 @@
  * author: Jeroen Baert
  */
 
+#define GLEW_STATIC
+
+// GLEW
 #include <GL/glew.h> // OpenGL Extension Wrangler functions
+// FROM OS
 #include <GL/gl.h> // OpenGL functions itself
+
+// TRIMESH2
+#include <TriMesh.h>
+#include <XForm.h>
+#include <GLCamera.h>
 #include <GL/glut.h> // FreeGlut window management
-#include "XForm.h" // xform to keep track of transformations (part of TriMesh2)
-#include "GLCamera.h" // OpenGL camera (part of Trimesh2)
+
 #include <string>
 #include <sstream>
+#include <algorithm>
 
+
+// SELFMADE
 #include "Model.h"
 #include "BaseDrawer.h"
 #include "EdgeContourDrawer.h"
 #include "FaceContourDrawer.h"
 #include "SuggestiveContourDrawer.h"
 #include "FPSCounter.h"
+
 using std::string;
 
 // Global variables (if this Viewer were a class, this would be its attributes)
-vector<Model*> models; // the model list
-vector<xform> transformations; // model transformations
-TriMesh::BSphere global_bsph; // global boundingbox
-xform global_transf; // global transformations
-GLCamera camera; // global camera
+std::vector<Model*> models; // the model list
+std::vector<trimesh::xform> transformations; // model transformations
+trimesh::TriMesh::BSphere global_bsph; // global boundingbox
+trimesh::xform global_transf; // global transformations
+trimesh::GLCamera camera; // global camera
 
 // our fps counter
 FPSCounter* fps;
@@ -60,26 +72,26 @@ void cls(){
  */
 void update_boundingsphere(){
 	// largest box possible
-	point boxmin(1e38, 1e38, 1e38);
-	point boxmax(-1e38, -1e38, -1e38);
+	trimesh::point boxmin(1e38, 1e38, 1e38);
+	trimesh::point boxmax(-1e38, -1e38, -1e38);
 	// find outer coords
 	for (unsigned int i = 0; i < models.size(); i++){
-		point c = transformations[i] * models[i]->mesh_->bsphere.center;
+		trimesh::point c = transformations[i] * models[i]->mesh_->bsphere.center;
 		float r = models[i]->mesh_->bsphere.r;
 		for (int j = 0; j < 3; j++) {
-			boxmin[j] = min(boxmin[j], c[j]-r);
-			boxmax[j] = max(boxmax[j], c[j]+r);
+			boxmin[j] = std::min(boxmin[j], c[j]-r);
+			boxmax[j] = std::max(boxmax[j], c[j]+r);
 		}
 	}
-	point &gc = global_bsph.center;
+	trimesh::point &gc = global_bsph.center;
 	float &gr = global_bsph.r;
 	gc = 0.5f * (boxmin + boxmax);
 	gr = 0.0f;
 	// find largest possible radius for sphere
 	for (unsigned int i = 0; i < models.size(); i++) {
-		point c = transformations[i] * models[i]->mesh_->bsphere.center;
+		trimesh::point c = transformations[i] * models[i]->mesh_->bsphere.center;
 		float r = models[i]->mesh_->bsphere.r;
-		gr = max(gr, dist(c, gc) + r);
+		gr = std::max(gr, dist(c, gc) + r);
 	}
 }
 
@@ -92,12 +104,12 @@ void resetview()
 	camera.stopspin();
 	// undo all model transformations
 	for (unsigned int i = 0; i < models.size(); i++){
-		transformations[i] = xform();
+		transformations[i] = trimesh::xform();
 	}
 	// recompute bounding sphere
 	update_boundingsphere();
 	// put ourselves in middle
-	global_transf = xform::trans(0, 0, -5.0f * global_bsph.r)*xform::trans(-global_bsph.center);
+	global_transf = trimesh::xform::trans(0, 0, -5.0f * global_bsph.r)* trimesh::xform::trans(-global_bsph.center);
 }
 
 /**
@@ -105,7 +117,7 @@ void resetview()
  */
 void setup_lighting(){
 	if(!diffuse){
-		Color c(1.0f);
+		trimesh::Color c(1.0f);
 		glColor3fv(c);
 		glDisable(GL_LIGHTING);
 	}
@@ -138,7 +150,7 @@ void redraw(){
 	glEnable(GL_CULL_FACE);
 
 	// compute new camera position
-	vec camera_pos = inv(global_transf) * point(0,0,0);
+	trimesh::vec camera_pos = inv(global_transf) * trimesh::point(0,0,0);
 
 	// setup lighting
 	setup_lighting();
@@ -200,7 +212,7 @@ void dump_image()
 		char *row1 = buf + 3 * width * i;
 		char *row2 = buf + 3 * width * (height - 1 - i);
 		for (int j = 0; j < 3 * width; j++)
-			swap(row1[j], row2[j]);
+			std::swap(row1[j], row2[j]);
 	}
 
 	// Write out file
@@ -219,19 +231,19 @@ static unsigned buttonstate = 0;
  * (from TriMesh2 library)
  */
 void mousemotionfunc(int x, int y){
-	static const Mouse::button map[] = {
-			Mouse::NONE, Mouse::ROTATE, Mouse::MOVEXY, Mouse::MOVEZ,
-			Mouse::MOVEZ, Mouse::MOVEXY, Mouse::MOVEXY, Mouse::MOVEXY,
+	static const trimesh::Mouse::button map[] = {
+			trimesh::Mouse::NONE, trimesh::Mouse::ROTATE, trimesh::Mouse::MOVEXY, trimesh::Mouse::MOVEZ,
+			trimesh::Mouse::MOVEZ, trimesh::Mouse::MOVEXY, trimesh::Mouse::MOVEXY, trimesh::Mouse::MOVEXY,
 	};
 
 	// find out what exactly happened
-	Mouse::button b = Mouse::NONE;
+	trimesh::Mouse::button b = trimesh::Mouse::NONE;
 	if (buttonstate & (1 << 3))
-		b = Mouse::WHEELUP;
+		b = trimesh::Mouse::WHEELUP;
 	else if (buttonstate & (1 << 4))
-		b = Mouse::WHEELDOWN;
+		b = trimesh::Mouse::WHEELDOWN;
 	else if (buttonstate & (1 << 30))
-		b = Mouse::LIGHT;
+		b = trimesh::Mouse::LIGHT;
 	else // hmm, it was something else
 		b = map[buttonstate & 7];
 
@@ -239,7 +251,7 @@ void mousemotionfunc(int x, int y){
 	camera.mouse(x, y, b,global_transf * global_bsph.center, global_bsph.r,global_transf);
 
 	// if we identified something as mouse movement, force redisplay
-	if (b != Mouse::NONE)
+	if (b != trimesh::Mouse::NONE)
 		glutPostRedisplay();
 }
 
@@ -248,7 +260,7 @@ void mousemotionfunc(int x, int y){
  * (from TriMesh2 library)
  */
 void mousebuttonfunc(int button, int state, int x, int y){
-	static timestamp last_click_time;
+	static trimesh::timestamp last_click_time;
 	static unsigned last_click_buttonstate = 0;
 	if (glutGetModifiers() & GLUT_ACTIVE_CTRL)
 		buttonstate |= (1 << 30);
@@ -257,7 +269,7 @@ void mousebuttonfunc(int button, int state, int x, int y){
 
 	if (state == GLUT_DOWN) {
 		buttonstate |= (1 << button);
-		last_click_time = now();
+		last_click_time = trimesh::now();
 		last_click_buttonstate = buttonstate;
 	}
 	else {
@@ -288,11 +300,11 @@ void keyboardfunc(unsigned char key, int x, int y){
 		printf ("Toggled Suggestive Contour fading to %i \n", b2->isFaded());
 		break;
 	case 'g': // toggle colored lines
-		b2->setLineColor(vec(1.0,0.0,0.0));
+		b2->setLineColor(trimesh::Color(1.0,0.0,0.0));
 		printf ("Suggestive Contour Lines in false color \n");
 		break;
 	case 'h': // toggle colored lines
-		b2->setLineColor(vec(0.0,0.0,0.0));
+		b2->setLineColor(trimesh::Color(0.0,0.0,0.0));
 		printf ("Suggestive Contour Lines in black color \n");
 		break;
 	case 'd': // toggle diffuse lighting
@@ -311,11 +323,11 @@ void keyboardfunc(unsigned char key, int x, int y){
  * (from TriMesh2 library)
  */
 void idle(){
-	xform tmp_xf = global_transf;
+	trimesh::xform tmp_xf = global_transf;
 	if (camera.autospin(tmp_xf)) // if the camera is still spinning
 		glutPostRedisplay();
 	else
-		usleep(10000); // do nothing
+		trimesh::usleep(10000); // do nothing
 	global_transf = tmp_xf;
 
 }
@@ -345,8 +357,8 @@ int main(int argc, char *argv[]){
 
 	// construct the Drawers we'll use in this demo
 	b = new BaseDrawer();
-	b1 = new EdgeContourDrawer(vec(0,0,0),3.0);
-    b2 = new SuggestiveContourDrawer(vec(0,0,0), 2.0, true, 0.001);
+	b1 = new EdgeContourDrawer(trimesh::vec(0,0,0),3.0);
+    b2 = new SuggestiveContourDrawer(trimesh::vec(0,0,0), 2.0, true, 0.001);
 
     if (argc < 2){
     	printf("No models supplied. Please supply one or more OBJ/PLY models. \n");
@@ -364,7 +376,7 @@ int main(int argc, char *argv[]){
 		m->pushDrawer(b2);
 		models.push_back(m);
 		// push back blank tranformation matrix
-		transformations.push_back(xform());
+		transformations.push_back(trimesh::xform());
 	}
 
 	// create fps counter

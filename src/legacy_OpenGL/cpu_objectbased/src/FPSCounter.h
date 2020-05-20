@@ -15,7 +15,7 @@
 
 class FPSCounter{
 private:
-	timestamp lasttime;
+    trimesh::timestamp lasttime;
 	int frames;
 public:
 	FPSCounter();

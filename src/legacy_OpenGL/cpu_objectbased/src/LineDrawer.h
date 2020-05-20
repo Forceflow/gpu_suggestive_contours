@@ -13,19 +13,19 @@ class LineDrawer: public Drawer {
 
 protected:
 	// line properties
-	vec linecolor_;
+	trimesh::vec linecolor_;
 	float linewidth_;
 	// buffers
-	vector<vec> drawbuffer_vertices_;
-	vector<vec4> drawbuffer_colors_;
+	std::vector<trimesh::vec> drawbuffer_vertices_;
+	std::vector<trimesh::vec4> drawbuffer_colors_;
 
-	LineDrawer(vec color, float linewidth);
+	LineDrawer(trimesh::vec color, float linewidth);
 	void flushDrawBuffer();
 
 public:
-	vec getLineColor();
+	trimesh::vec getLineColor();
 	float getLineWidth();
-	void setLineColor(vec color);
+	void setLineColor(trimesh::vec color);
 	void setLineWidth(float width);
 };
 

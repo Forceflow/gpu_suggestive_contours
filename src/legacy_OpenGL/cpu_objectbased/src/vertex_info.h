@@ -13,7 +13,7 @@
 #include "Model.h"
 #include <vector>
 
-void compute_ndotv(const TriMesh *mesh, const vec camera, vector<float> &ndtov);
-void compute_CurvDerivatives(const TriMesh *mesh, const vec camera, vector<float> &kr, vector<float> &num, vector<float> &den, float sc_threshold);
+void compute_ndotv(const trimesh::TriMesh *mesh, const trimesh::vec camera, std::vector<float> &ndtov);
+void compute_CurvDerivatives(const trimesh::TriMesh *mesh, const trimesh::vec camera, std::vector<float> &kr, std::vector<float> &num, std::vector<float> &den, float sc_threshold);
 
 #endif /* VERTEX_INFO_H_ */

@@ -15,7 +15,7 @@
  * @param fade: use an alpha value fading scheme or not
  * @param sc_thresh: the threshold for trimming contours with low stability
  */
-SuggestiveContourDrawer::SuggestiveContourDrawer(vec color=vec(0,0,0),float linewidth=3.0, bool fade=true, float sc_thresh=0.01)
+SuggestiveContourDrawer::SuggestiveContourDrawer(trimesh::Color color= trimesh::Color(0,0,0),float linewidth=3.0, bool fade=true, float sc_thresh=0.01)
 : LineDrawer(color,linewidth), fading_(fade), sc_thresh_(sc_thresh){
 	// nothing left to do
 }
@@ -40,7 +40,7 @@ bool SuggestiveContourDrawer::isFaded(){
  * @param Model* : the model
  * @param camera_position: the current camera position, given in 3d-coordinates
  */
-void SuggestiveContourDrawer::draw(Model* m, vec camera_position){
+void SuggestiveContourDrawer::draw(Model* m, trimesh::vec camera_position){
 	if(isVisible()){
 		// Setup OpenGL to draw nice lines
 		glPolygonOffset(5.0f, 30.0f);
@@ -57,7 +57,7 @@ void SuggestiveContourDrawer::draw(Model* m, vec camera_position){
 		// if we use fading, set the fade parameter to something different than 0.0
 		float fade = 0.0f;
 		if(isFaded()){
-			fade = 0.03f / sqr(m->feature_size_);
+			fade = 0.03f / trimesh::sqr(m->feature_size_);
 		}
 
 		// we need model curvature info
@@ -78,16 +78,16 @@ void SuggestiveContourDrawer::draw(Model* m, vec camera_position){
 void SuggestiveContourDrawer::construct_sc_segments(Model *m, int vec0, int vec1, int vec2, float fade_factor)
 {
 	// aliases
-	const vector<point> &vertices = m->mesh_->vertices;
-	const vector<float> &kr = m->kr_;
-	const vector<float> &num = m->num_;
-	const vector<float> &den = m->den_;
+	const std::vector<trimesh::point> &vertices = m->mesh_->vertices;
+	const std::vector<float> &kr = m->kr_;
+	const std::vector<float> &num = m->num_;
+	const std::vector<float> &den = m->den_;
 	// weights between vec0 and vec1/vec2
 	float w10 = kr[vec0] / (kr[vec0] -kr[vec1]); float w01 = 1.0f - w10;
 	float w20 = kr[vec0] / (kr[vec0] -kr[vec2]); float w02 = 1.0f - w20;
 	// this results in these zero points
-	point p1 = w01 * vertices[vec0] + w10 * vertices[vec1];
-	point p2 = w02 * vertices[vec0] + w20 * vertices[vec2];
+	trimesh::point p1 = w01 * vertices[vec0] + w10 * vertices[vec1];
+	trimesh::point p2 = w02 * vertices[vec0] + w20 * vertices[vec2];
 	// let's test num_ en den_ : interpolate values
 	float num1 = w01 * num[vec0] + w10 * num[vec1];
 	float num2 = w02 * num[vec0] + w20 * num[vec2];
@@ -112,7 +112,7 @@ void SuggestiveContourDrawer::construct_sc_segments(Model *m, int vec0, int vec1
 		zero_den = 0.0f;
 	}
 	else if(zero_den > zero_num){
-		swap(zero_num,zero_den);
+		std::swap(zero_num,zero_den);
 	}
 	// count the number of vertex segment points we've drawn
 	int nb_points_drawn = 0;
@@ -121,26 +121,26 @@ void SuggestiveContourDrawer::construct_sc_segments(Model *m, int vec0, int vec1
 		return;
 	}
 	if(valid_p1){ // first point is valid: it's on a segment
-		drawbuffer_colors_.push_back(Vec<4,float>(linecolor_[0],linecolor_[1],linecolor_[2], num1 / (den1 * fade_factor + num1)));
+		drawbuffer_colors_.push_back(trimesh::Vec<4,float>(linecolor_[0],linecolor_[1],linecolor_[2], num1 / (den1 * fade_factor + num1)));
 		drawbuffer_vertices_.push_back(p1);
 		nb_points_drawn++;
 	}
 	if(zero_num){ // if the dwKr dips below zero, first segment ends here. or vice versa, it starts here
 		float num = (1.0f - zero_num) * num1 + zero_num * num2;
 		float den = (1.0f - zero_num) * den1 + zero_num * den2;
-		drawbuffer_colors_.push_back(Vec<4,float>(linecolor_[0],linecolor_[1],linecolor_[2], num / (den * fade_factor + num)));
+		drawbuffer_colors_.push_back(trimesh::Vec<4,float>(linecolor_[0],linecolor_[1],linecolor_[2], num / (den * fade_factor + num)));
 		drawbuffer_vertices_.push_back((1.0f-zero_num)*p1+zero_num*p2);
 		nb_points_drawn++;
 	}
 	if(zero_den){ // it starts again here, or vice versa, it ends here
 		float num = (1.0f - zero_den) * num1 + zero_den * num2;
 		float den = (1.0f - zero_den) * den1 + zero_den * den2;
-		drawbuffer_colors_.push_back(Vec<4,float>(linecolor_[0],linecolor_[1],linecolor_[2], num / (den * fade_factor + num)));
+		drawbuffer_colors_.push_back(trimesh::Vec<4,float>(linecolor_[0],linecolor_[1],linecolor_[2], num / (den * fade_factor + num)));
 		drawbuffer_vertices_.push_back((1.0f-zero_den)*p1+zero_den*p2);
 		nb_points_drawn++;
 	}
 	if(nb_points_drawn != 2){ // when we need another point (no dwKr dips!). Complete 1st or 2nd segment.
-		drawbuffer_colors_.push_back(Vec<4,float>(linecolor_[0],linecolor_[1],linecolor_[2], num2 /(den2 * fade_factor + num2)));
+		drawbuffer_colors_.push_back(trimesh::Vec<4,float>(linecolor_[0],linecolor_[1],linecolor_[2], num2 /(den2 * fade_factor + num2)));
 		drawbuffer_vertices_.push_back(p2);
 	}
 }
@@ -152,11 +152,11 @@ void SuggestiveContourDrawer::construct_sc_segments(Model *m, int vec0, int vec1
  * @param camera_position: the current camera position, given in 3d-coordinates
  * @param fade_factor: the alpha blending scheme for the fading
  */
-void SuggestiveContourDrawer::find_sc_segments(Model* m, vec camera_position, float fade_factor)
+void SuggestiveContourDrawer::find_sc_segments(Model* m, trimesh::vec camera_position, float fade_factor)
 {
 	// some aliases to write readable code
-	const vector<TriMesh::Face> &faces = m->mesh_->faces;
-	const vector<float> &kr = m->kr_;
+	const std::vector<trimesh::TriMesh::Face> &faces = m->mesh_->faces;
+	const std::vector<float> &kr = m->kr_;
 
 	// for every face in the filtered set
 	for(unsigned int i =0; i < faces.size(); i++)

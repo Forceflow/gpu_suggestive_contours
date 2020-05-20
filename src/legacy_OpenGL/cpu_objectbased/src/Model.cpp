@@ -15,7 +15,7 @@
 Model::Model(const char* filename)
 {
 	// read mesh_ from file
-	TriMesh* mesh = TriMesh::read(filename);
+	trimesh::TriMesh* mesh = trimesh::TriMesh::read(filename);
 	// TriMesh2 library can calculate some vertex-info for us
 	mesh->need_across_edge();
 	mesh->need_normals();
@@ -34,7 +34,7 @@ Model::Model(const char* filename)
  *
  * @param camera_position: the current position of the camera, in 3d coordinates
  */
-void Model::draw(vec camera_position){
+void Model::draw(trimesh::vec camera_position){
 	// clear all view-dependent buffers: drawers_ will fill them as necessary
 	clearViewDependentData();
 	// for every drawer in the draw stack, call draw function
@@ -61,7 +61,7 @@ void Model::popDrawer(){
 /**
  * Compute NdotV for all vertices, given a camera position
  */
-void Model::needNdotV(vec camera_position)
+void Model::needNdotV(trimesh::vec camera_position)
 {
 	if(ndotv_.empty()){
 		compute_ndotv(mesh_,camera_position,ndotv_);
@@ -75,7 +75,7 @@ void Model::needNdotV(vec camera_position)
  * @param: camera_position : the camera standpoint
  * @param: sc_threshold : a filtering threshold for small curvatures
  */
-void Model::needCurvDerivatives(vec camera_position, float sc_threshold)
+void Model::needCurvDerivatives(trimesh::vec camera_position, float sc_threshold)
 {
 	if(kr_.empty() || num_.empty() || den_.empty()){
 		compute_CurvDerivatives(mesh_,camera_position,kr_,num_,den_,sc_threshold);

@@ -36,29 +36,29 @@ private:
 public:
 
 	// the mesh_ representing this model
-	const TriMesh* mesh_;
+	const trimesh::TriMesh* mesh_;
 	// the drawer stack
-	vector<Drawer*> drawers_;
+	std::vector<Drawer*> drawers_;
 
 	// vertex buffer objects for GPU storage
 	GLuint vbo_positions_;
 	GLuint vbo_normals_;
 
 	// VIEW INDEPENDENT VALUES
-	vector<vec> facenormals_;
+	std::vector<trimesh::vec> facenormals_;
 	float feature_size_;
 
 	// VIEW_DEPENDENT VALUES
-	vector<float> ndotv_; // ndotv_
-	vector<float> kr_; // radial curvature
-	vector<float> num_; // second derivative of radial curv
-	vector<float> den_; // second derivative of radial curv
+	std::vector<float> ndotv_; // ndotv_
+	std::vector<float> kr_; // radial curvature
+	std::vector<float> num_; // second derivative of radial curv
+	std::vector<float> den_; // second derivative of radial curv
 
 	// constructor
 	Model(const char* filename);
 
 	// draw the model
-	void draw(vec camera_position);
+	void draw(trimesh::vec camera_position);
 	// pop a drawer from the drawer stack
 	void popDrawer();
 	// push a drawer into the drawer stack
@@ -67,10 +67,10 @@ public:
 	void clearDrawers();
 
 	// compute ndotv_ for all vertices in this model, given a camera position
-	void needNdotV(vec camera_position);
+	void needNdotV(trimesh::vec camera_position);
 	// compute all curvature derivatives in this model, given a camera position
 	// and a threshold for small derivatives
-	void needCurvDerivatives(vec camera_position, float sc_threshold);
+	void needCurvDerivatives(trimesh::vec camera_position, float sc_threshold);
 };
 
 #endif /* MODEL_H_ */

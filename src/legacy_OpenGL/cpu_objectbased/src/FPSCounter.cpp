@@ -17,16 +17,16 @@ using std::cout;
 using std::endl;
 
 FPSCounter::FPSCounter(){
-	lasttime = now();
+	lasttime = trimesh::now();
 	FPS = 0;
 	frames = 0;
 }
 
 void FPSCounter::updateCounter(){
-	if(now().tv_sec - lasttime.tv_sec >= 1){
+	if(trimesh::now() - lasttime >= 1){
 		FPS = frames;
 		frames = 0;
 	}
-	lasttime = now();
+	lasttime = trimesh::now();
 	frames++;
 }

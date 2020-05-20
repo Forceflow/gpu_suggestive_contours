@@ -17,7 +17,7 @@ protected:
 	bool visible_;
 	Drawer(bool isvisible);
 public:
-	virtual void draw(Model* m, vec camera_position) = 0;
+	virtual void draw(Model* m, trimesh::vec camera_position) = 0;
 	void toggleVisibility();
 	bool isVisible();
 };

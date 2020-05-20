@@ -15,7 +15,7 @@
  * @param: color : the desired linecolor
  * @param: linewidth: the desired linewidth
  */
-EdgeContourDrawer::EdgeContourDrawer(vec color = vec(0,0,0), float linewidth = 4.0): LineDrawer(color,linewidth)
+EdgeContourDrawer::EdgeContourDrawer(trimesh::vec color = trimesh::vec(0,0,0), float linewidth = 4.0): LineDrawer(color,linewidth)
 {
 	//nothing left to do
 }
@@ -26,7 +26,7 @@ EdgeContourDrawer::EdgeContourDrawer(vec color = vec(0,0,0), float linewidth = 4
  * @param Model* : the model
  * @param camera_position: the current camera position, given in 3d-coordinates
  */
-void EdgeContourDrawer::draw(Model* m, vec camera_position)
+void EdgeContourDrawer::draw(Model* m, trimesh::vec camera_position)
 {
 	if(isVisible()){
 		// setup OpenGL for nice linedrawing
@@ -50,12 +50,12 @@ void EdgeContourDrawer::draw(Model* m, vec camera_position)
  * @param Model* : the model
  * @param camera_position: the current camera position, given in 3d-coordinates
  */
-void EdgeContourDrawer::find_edges(Model* m, vec camera_position)
+void EdgeContourDrawer::find_edges(Model* m, trimesh::vec camera_position)
 {
 	// some aliases to write readable code
-	const vector<TriMesh::Face> &faces = m->mesh_->faces;
-	const vector<point> &vertices = m->mesh_->vertices;
-	const vector<TriMesh::Face> &edge = m->mesh_->across_edge;
+	const std::vector<trimesh::TriMesh::Face> &faces = m->mesh_->faces;
+	const std::vector<trimesh::point> &vertices = m->mesh_->vertices;
+	const std::vector<trimesh::TriMesh::Face> &edge = m->mesh_->across_edge;
 
 	// for every face
 	for(unsigned int i =0; i < faces.size(); i++){

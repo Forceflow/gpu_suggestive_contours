@@ -14,13 +14,13 @@
  * @param &ndotv: The vector where the results will be stored.
  *
  */
-void compute_ndotv(const TriMesh*mesh, const vec camera, vector<float> &ndotv)
+void compute_ndotv(const trimesh::TriMesh*mesh, const trimesh::vec camera, std::vector<float> &ndotv)
 {
 	#pragma omp parallel for
 	for(unsigned int i = 0; i < mesh->vertices.size(); i++)
 	{
-		vec view = camera - mesh->vertices[i];
-		normalize(view);
+		trimesh::vec view = camera - mesh->vertices[i];
+		trimesh::normalize(view);
 		ndotv[i] = mesh->normals[i] DOT view;
 	}
 }
@@ -35,13 +35,13 @@ void compute_ndotv(const TriMesh*mesh, const vec camera, vector<float> &ndotv)
  * @param &den: The vector where denominator of the directional derivative of the radial curvature computation will be stored
  *
  */
-void compute_CurvDerivatives(const TriMesh *mesh, const vec camera, vector<float> &kr, vector<float> &num, vector<float> &den, float sc_threshold)
+void compute_CurvDerivatives(const trimesh::TriMesh *mesh, const trimesh::vec camera, std::vector<float> &kr, std::vector<float> &num, std::vector<float> &den, float sc_threshold)
 {
 	#pragma omp parallel for
 	for(unsigned int i = 0; i < mesh->vertices.size(); i++)
 	{
 		// compute ndtov
-		vec view = camera - mesh->vertices[i];
+		trimesh::vec view = camera - mesh->vertices[i];
 		float norm = 1.0f / len(view);
 		view *= norm;
 		float ndotv = mesh->normals[i] DOT view;
@@ -50,14 +50,19 @@ void compute_CurvDerivatives(const TriMesh *mesh, const vec camera, vector<float
 		float u2 = u*u;
 		float t = view DOT mesh->pdir2[i];
 		float v2 = t*t;
-		kr[i] = ((mesh->curv1)[i] * u2 + (mesh->curv2)[i] * v2);
+		kr.resize(mesh->curv1.size());
+		num.resize(mesh->curv1.size());
+		den.resize(mesh->curv1.size());
+		float first = (mesh->curv1)[i] * u2;
+		float second = (mesh->curv2)[i] * v2;
+		kr[i] = first+second;
 		// compute numerator and denominator of derivative of radial curvature
 		// suggestive contours computation
 		num[i] = u2 * ( u*mesh->dcurv[i][0] + 3.0f*t*mesh->dcurv[i][1] ) + v2 * (3.0f*u*mesh->dcurv[i][2] + t*mesh->dcurv[i][3]);
 		float thetafix = (1.0f / (u2+v2));
 		num[i] *= thetafix;
 		float tr = (mesh->curv2[i] - mesh->curv1[i]) * u * t *thetafix;
-		num[i] -= 2.0f * ndotv *sqr(tr);
+		num[i] -= 2.0f * ndotv * trimesh::sqr(tr);
 		den[i] = ndotv;
 		// filtering of lines: see NPAR 2004 paper, page 5: other strategies for trimming suggestive contours
 		num[i] -= sc_threshold * den[i];

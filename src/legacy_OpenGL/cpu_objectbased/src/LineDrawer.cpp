@@ -14,7 +14,7 @@
 /**
  * Protected LineDrawer constructor
  */
-LineDrawer::LineDrawer(vec color, float linewidth): Drawer(true), linecolor_(color), linewidth_(linewidth)
+LineDrawer::LineDrawer(trimesh::vec color, float linewidth): Drawer(true), linecolor_(color), linewidth_(linewidth)
 {
 
 }
@@ -46,7 +46,7 @@ void LineDrawer::flushDrawBuffer()
 /**
  * Returns the current line color
  */
-vec LineDrawer::getLineColor(){
+trimesh::vec LineDrawer::getLineColor(){
 	return linecolor_;
 }
 
@@ -60,7 +60,7 @@ float LineDrawer::getLineWidth(){
 /**
  * Sets the current line color
  */
-void LineDrawer::setLineColor(vec color){
+void LineDrawer::setLineColor(trimesh::vec color){
 	this->linecolor_ = color;
 }
 

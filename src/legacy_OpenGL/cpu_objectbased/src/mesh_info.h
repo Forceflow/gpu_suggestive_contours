@@ -11,8 +11,8 @@
 #include "Model.h"
 #include <vector>
 
-void computeFaceNormals(const TriMesh* mesh, vector<vec> &facenormals);
-float computeFeatureSize(const TriMesh* mesh);
-bool to_camera(Model* m, int face, vec camera_position);
+void computeFaceNormals(const trimesh::TriMesh* mesh, std::vector<trimesh::vec> &facenormals);
+float computeFeatureSize(const trimesh::TriMesh* mesh);
+bool to_camera(Model* m, int face, trimesh::vec camera_position);
 
 #endif /* MESH_INFO_H_ */

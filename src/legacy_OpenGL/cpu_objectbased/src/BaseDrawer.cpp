@@ -20,7 +20,7 @@ BaseDrawer::BaseDrawer(): Drawer(true){
  * @param: Model* : the model to be drawn
  * @param: camera_position: the current camera position, in 3d-coordinates
  */
-void BaseDrawer::draw(Model* m, vec camera_position)
+void BaseDrawer::draw(Model* m, trimesh::vec camera_position)
 {
 	if(isVisible()){
 		// setup vertex and array pointers
@@ -42,7 +42,7 @@ void BaseDrawer::draw(Model* m, vec camera_position)
  *
  * @param: themesh: the mesh to be drawn.
  */
-void BaseDrawer::draw_tstrips(const TriMesh *themesh)
+void BaseDrawer::draw_tstrips(const trimesh::TriMesh *themesh)
 {
 	const int *t = &themesh->tstrips[0];
 	const int *end = t + themesh->tstrips.size();

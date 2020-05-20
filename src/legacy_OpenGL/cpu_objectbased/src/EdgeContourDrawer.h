@@ -14,11 +14,11 @@
 
 class EdgeContourDrawer: public LineDrawer{
 private:
-	void find_edges(Model* m, vec camera_position);
+	void find_edges(Model* m, trimesh::vec camera_position);
 public:
-	EdgeContourDrawer(vec color, float linewidth);
+	EdgeContourDrawer(trimesh::vec color, float linewidth);
 	virtual ~EdgeContourDrawer();
-	virtual void draw(Model* m, vec camera_position);
+	virtual void draw(Model* m, trimesh::vec camera_position);
 };
 
 #endif /* EDGECONTOURDRAWER_H_ */

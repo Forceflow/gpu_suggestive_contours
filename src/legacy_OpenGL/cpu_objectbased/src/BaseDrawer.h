@@ -13,10 +13,10 @@
 class BaseDrawer: public Drawer
 {
 private:
-	void draw_tstrips(const TriMesh* mesh);
+	void draw_tstrips(const trimesh::TriMesh* mesh);
 public:
 	BaseDrawer();
-	virtual void draw(Model* m, vec camera_position);
+	virtual void draw(Model* m, trimesh::vec camera_position);
 };
 
 #endif /* BASEDRAWER_H_ */
