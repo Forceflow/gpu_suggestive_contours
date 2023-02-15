@@ -1,9 +1,7 @@
-import * as THREE from '../node_modules/three/build/three.module.js';
-import { OBJLoader } from '../node_modules/three/examples/jsm/loaders/OBJLoader.js';
-// import { OrbitControls } from '../node_modules/three/examples/jsm/controls/OrbitControls.js';
-import { TrackballControls } from '../node_modules/three/examples/jsm/controls/TrackballControls.js'
-import Stats from '../node_modules/three/examples/jsm/libs/stats.module.js'
-import GUI from '../node_modules/three/examples/jsm/libs/dat.gui.module.js'
+import * as THREE from 'three';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { TrackballControls } from 'three/addons/controls/TrackballControls.js'
+import Stats from 'three/addons/libs/stats.module.js'
 
 // STATS
 var stats = new Stats();
